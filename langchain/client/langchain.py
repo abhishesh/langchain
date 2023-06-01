@@ -107,10 +107,10 @@ class LangChainPlusClient(BaseSettings):
             raise ValueError(
                 "Unable to get default tenant ID. Please manually provide."
             ) from e
-        results: List[dict] = response.json()
-        if len(results) == 0:
+        if results := response.json():
+            return results[0]["id"]
+        else:
             raise ValueError("No seeded tenant found")
-        return results[0]["id"]
 
     @staticmethod
     def _get_session_name(
@@ -195,7 +195,7 @@ class LangChainPlusClient(BaseSettings):
             "tenant_id": self.tenant_id,
         }
         response = requests.post(
-            self.api_url + "/datasets/upload",
+            f"{self.api_url}/datasets/upload",
             headers=self._headers,
             data=data,
             files=files,
@@ -280,8 +280,7 @@ class LangChainPlusClient(BaseSettings):
         elif session_id is None:
             raise ValueError("Must provide session_name or session_id")
         response = requests.delete(
-            self.api_url + f"/sessions/{session_id}",
-            headers=self._headers,
+            f"{self.api_url}/sessions/{session_id}", headers=self._headers
         )
         raise_for_status_with_text(response)
         return None
@@ -296,9 +295,7 @@ class LangChainPlusClient(BaseSettings):
             description=description,
         )
         response = requests.post(
-            self.api_url + "/datasets",
-            headers=self._headers,
-            data=dataset.json(),
+            f"{self.api_url}/datasets", headers=self._headers, data=dataset.json()
         )
         raise_for_status_with_text(response)
         return Dataset(**response.json())
@@ -397,8 +394,6 @@ class LangChainPlusClient(BaseSettings):
         elif dataset_name is not None:
             dataset_id = self.read_dataset(dataset_name=dataset_name).id
             params["dataset"] = dataset_id
-        else:
-            pass
         response = self._get("/examples", params=params)
         raise_for_status_with_text(response)
         yield from [Example(**dataset) for dataset in response.json()]
@@ -469,9 +464,7 @@ class LangChainPlusClient(BaseSettings):
             feedback_source=feedback_source,
         )
         response = requests.post(
-            self.api_url + "/feedback",
-            headers=self._headers,
-            data=feedback.json(),
+            f"{self.api_url}/feedback", headers=self._headers, data=feedback.json()
         )
         raise_for_status_with_text(response)
         return Feedback(**feedback.dict())
